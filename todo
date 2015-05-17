@@ -1,0 +1,31 @@
+Todo:
+
+refactor code
+
+put it in github
+
+persistence
+
+sounds
+	background
+	ball jump
+	ball die
+	stars collect
+
+iphone port
+
+restart screen
+	score/best score
+	share
+	rate
+
+ads integration
+	banner
+	full screen
+	video revive
+	no ads
+
+bugs
+	kill hero out of screen
+	spike overlap
+	minor:avoid pixels n thorns in game over screen

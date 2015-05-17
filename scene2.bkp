@@ -1,0 +1,748 @@
+---------------------------------------------------------------------------------
+--
+-- scene2.lua
+--
+---------------------------------------------------------------------------------
+
+local composer = require( "composer" )
+local widget = require("widget")
+local scene = composer.newScene()
+local physics = require( "physics" )
+physics.start()
+local score =99,myText,gameOverText,restart,spike_group,image_star,center_piece,wrath,hero,image_group,topSpikeGrp
+local colorCount = 0,starTimer,spikesTimer,touchListener,sceneGroup,colorTimer
+local scoreButton, gameOverButton, restartButton, scoreGroup
+local trails,trailTimer
+local heroPieces
+local from_x = display.contentCenterX
+local from_y = display.contentHeight-50
+local to_x =display.contentCenterX
+local to_y = 0
+
+local hits = {}
+local ray = {}
+----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------
+local function onLocalCollision( self, event )
+
+    if ( event.phase == "began")then
+        
+       if (event.other.myName == "hero") then
+       		score = score + 1
+       		if (score >= 1) then
+       			colorCount = colorCount + 1
+       			if (score >= 5) then
+					
+					if((colorCount == 5) ) then
+						colorCount = 0
+						-- display.setDefault( "background", math.random(0,255)/255,  math.random(0,255)/255,  math.random(0,50)/255)
+					end
+				end
+       		end
+       		
+    --    		if(score == 10) then
+    --    			myText:removeSelf()
+    --    			myText = nil
+    --    			myText = display.newText(  score, display.contentWidth/2, display.contentHeight*.35,native.systemFontBold, 100)
+				-- myText:setFillColor( 142/255, 142/255, 142/255 )
+				-- sceneGroup:insert(myText)
+    --    		end
+       		myText.text = score
+       		
+       		local scoreText = display.newText( "+1", 0, 0, native.systemFontBold, 60 )
+       		scoreText.y = self.y + 30
+       		scoreText.x = self.x
+       		scoreText:setFillColor(237/255,145/255,33/255)
+       		local scoreTextRemove = function( obj )
+			    obj:removeSelf()
+			    obj = nil
+			end
+			transition.to( scoreText, { time=1500, alpha = 0,y = self.y - 150,onComplete = scoreTextRemove} )	
+       		self:removeSelf()
+       elseif (event.other.myName == "floor") then
+       			
+       			local token4 = display.newCircle(0,0,10)
+       			token4:setFillColor(237/255,145/255,33/255)
+       			token4.x = self.x - 10
+       			token4.y = self.y - 10
+
+       			local token5 = display.newCircle(0,0,10)
+       			token5:setFillColor(237/255,145/255,33/255)
+       			token5.x = self.x + 10
+       			token5.y = self.y - 10
+       		
+       			local token = display.newCircle(0,0,10)
+       			token:setFillColor(237/255,145/255,33/255)
+       			token.x = self.x - 10
+       			token.y = self.y
+
+		local token1 = display.newCircle(0,0,10)
+       			token1:setFillColor(237/255,145/255,33/255)
+       			token1.x = self.x 
+       			token1.y = self.y
+
+       			local token2 = display.newCircle(0,0,10)
+       			token2:setFillColor(237/255,145/255,33/255)
+       			token2.x = self.x + 10
+       			token2.y = self.y 
+
+
+       			local tokenTrailRemove = function( obj )
+				    obj:removeSelf()
+				    obj = nil
+				end
+       			transition.to( token, { time=1000,alpha = 0, y = self.y - 50,x = self.x - 50, yScale = 0.1,xScale = 0.1,onComplete = tokenTrailRemove} )
+       			transition.to( token1, { time=1000,alpha = 0,y = self.y - 100, yScale = 0.1,xScale = 0.1,onComplete = tokenTrailRemove} )
+       			transition.to( token2, { time=1000,alpha = 0,y = self.y - 50,x = self.x + 50, yScale = 0.1,xScale = 0.1,onComplete = tokenTrailRemove} )
+       			transition.to( token4, { time=1000,alpha = 0,y = self.y + 50,x = self.x - 50, yScale = 0.1,xScale = 0.1,onComplete = tokenTrailRemove} )
+       			transition.to( token5, { time=1000,alpha = 0,y = self.y + 50,x = self.x + 50, yScale = 0.1,xScale = 0.1,onComplete = tokenTrailRemove} )
+       		
+       		
+       		self:removeSelf()
+       end
+        
+    end
+end
+
+-----------------------------------------------------------------------------------------------------
+local function create_body( event )
+
+	if image_group.numChildren >= 100 then
+
+		-- Limit the number of bodies simultaneously on screen.
+		image_group[ 1 ]:removeSelf()
+
+	end
+
+
+	-- myRectangle.strokeWidth = 3
+	
+
+	image_star = display.newRect( 0,0, 30, 30 )
+	image_star:setFillColor(237/255,145/255,33/255)
+	image_star.myName = "star"
+
+	image_group:insert( image_star )
+	
+
+	image_star.x = math.random(15, display.contentWidth-15 )
+	image_star.y = 0
+
+	image_star.rotation = math.random( 360 )
+
+	physics.addBody( image_star, "dynamic", { isSensor = true,
+												
+												outline = image_outline } )
+	image_star.gravityScale = 0
+	image_star:setLinearVelocity(0,600)
+	-- transition.moveTo(image_star,{y = display.contentHeight, time = 2500})
+
+	image_star.collision = onLocalCollision
+	image_star:addEventListener( "collision", image_star )
+	
+	
+
+end
+---------------------------------------------------------------------------------
+
+-- keep hero in the world bounds
+	
+function scene:enterFrame( event )
+	if (not(hero == nil)) then
+		local  currentVx, currentVy = hero:getLinearVelocity()
+		if (hero.x >= display.contentWidth - 20) then
+		  hero:setLinearVelocity(-350,currentVy)
+		  hero.isRight = true
+	    elseif (hero.x <= 20) then	
+	    	hero:setLinearVelocity(350,currentVy)
+	    	hero.isRight = false
+	   	end
+
+	   	
+	end
+	if(not(heroPieces == nil)) then
+		for i=1,heroPieces.numChildren do
+			local  currentVx, currentVy = heroPieces[i]:getLinearVelocity()
+			if (heroPieces[i].x >= display.contentWidth) then
+			  heroPieces[i]:setLinearVelocity(-350,currentVy)
+			  
+		    elseif (heroPieces[i].x <= 0) then	
+		    	heroPieces[i]:setLinearVelocity(350,currentVy)
+		    
+		    elseif (heroPieces[i].y <= 0) then
+		    	heroPieces[i]:setLinearVelocity(currentVx,-currentVy)	
+		   	end
+
+		end
+	end
+	
+		
+	if (wrath.y >= display.contentHeight-20) then
+	   		wrath.y = display.contentHeight-20
+	elseif (wrath.y <= 30) then
+	   		wrath.y = 30
+	end
+
+	for index = 1,image_group.numChildren do
+		if(not(image_group[index] == nil)) then
+			image_group[index].rotation = image_group[index].rotation +10
+		end
+	end
+
+	
+
+	   	-- spikes transition
+	   	
+	for i=1 , spike_group.numChildren do
+		if(not (spike_group[i] == null)) then
+		   	if(  not spike_group[i].up) then
+		   		spike_group[i].y = spike_group[i].y+1
+		   		if (spike_group[i].y >= display.contentHeight + 100) then
+		   			spike_group[i]:removeSelf()
+		   		end
+		   	elseif(spike_group[i].up) then
+		   		spike_group[i].y = spike_group[i].y-1
+		   		if (spike_group[i].y <= display.contentHeight-30) then
+		   			spike_group[i].up = false
+		   		end
+		   	end   		
+		end
+	end	
+
+
+	
+end
+---------------------------------------------------------------------
+function onSceneTouch( self, event )
+	
+	-- if event.phase == "ended" then
+		composer.gotoScene( "scene1", "fade", 400  )
+		
+		return true
+	-- end
+end
+------------------------------------------------------------------------------
+local function killHero( event )
+	heroPieces = display.newGroup()
+	Runtime:removeEventListener('touch',scene)
+	if(not (hero == nil)) then
+		local x,y = hero.x,hero.y
+		
+		for i=1,10 do
+			local circle = display.newCircle(x,y,math.random(3,20))
+			local xVelocity = math.random(-150,150)
+			local yVelocity = math.random(-400,-200)
+			
+			physics.addBody(circle,"dynamic",{isSensor = true,filter ={groupIndex = -1}})
+			circle:setLinearVelocity(xVelocity,yVelocity)
+			circle:setFillColor( 0/255, 197/255, 205/255 )
+			circle.gravityScale = 2
+			function removeCircle( obj )
+				obj:removeSelf()
+				obj = nil
+			end
+			transition.to( circle, { time=2000,alpha = 0, xScale=0.001,yScale = 0.001,onComplete = removeCircle} )	
+			heroPieces:insert(circle)
+		end
+		hero:removeSelf()
+		hero = nil
+		sceneGroup:insert(heroPieces)
+	end
+	
+	
+end
+----------------------------------------------------------------------------------
+local function gameOver( event )
+	
+	
+	
+	gameOverFlag = true
+	-- wrath.gravityScale = 0
+	-- wrath.x = display.contentWidth/2
+	-- wrath.y = 0
+	
+	
+	timer.cancel(starTimer)
+	timer.cancel(spikesTimer)
+	timer.cancel(trailTimer)
+	timer.cancel(colorTimer)
+	
+	-- timer.cancel(topSpikesTimer)
+	-- physics.pause()
+
+	-- scoreButton = widget.newButton
+	-- {
+	--     label = "button",
+	    
+	--     emboss = false,
+	--     --properties for a rounded rectangle button...
+	--     shape="circle",
+	--     width = display.contentWidth,
+	--     height = 100,
+	--     fontSize = 60,
+	--     radius = 150,
+	--     fillColor = { default={ 237/255,145/255,33/255 } , over={ 237/255,145/255,33/255, 1 }},
+	    
+	--     labelColor = {default={ 1, 1, 1 }, over={ 1, 1, 1, 1 }},
+	--     strokeWidth = 4
+	-- }
+	-- sceneGroup:insert(scoreButton)
+	-- -- Center the button
+	-- scoreButton.x = - display.contentWidth * 2
+	-- scoreButton.y = display.contentCenterY
+
+	-- transition.to(scoreButton,{time=200, x = display.contentCenterX+150})
+
+	-- -- Change the button's label text
+	-- scoreButton:setLabel( "Score: "..score )
+
+	-- gameOverButton = widget.newButton
+	-- {
+	--     label = "button",
+	    
+	--     emboss = false,
+	--     --properties for a rounded rectangle button...
+	--     shape="circle",
+	--     width = display.contentWidth,
+	--     height = 100,
+	--     fontSize = 50,
+	--     radius = 150,
+	--     fillColor = { default={ 219/255, 112/255, 147/255 } , over={ 219/255, 112/255, 147/255, 1 }},
+	    
+	--     labelColor = {default={ 1, 1, 1 }, over={ 1, 1, 1, 1 }},
+	--     strokeWidth = 4
+	-- }
+	-- sceneGroup:insert(gameOverButton)
+	-- -- Center the button
+	-- gameOverButton.x = display.contentWidth * 2
+	-- gameOverButton.y = display.contentCenterY - 300
+
+	-- -- Change the button's label text
+	-- gameOverButton:setLabel( "Game Over" )
+
+	-- transition.to(gameOverButton,{time=200, x = display.contentCenterX - 150})
+	-- restartButton = widget.newButton
+	-- {
+	--     label = "button",
+	--     onEvent = onSceneTouch,
+	--     emboss = false,
+	--     --properties for a rounded rectangle button...
+	--     shape="circle",
+	--    	width = display.contentWidth,
+	--    	height = 100,
+	--     radius = 150,
+	--     fontSize = 60,
+	--     fillColor = { default={ 0/255, 197/255, 205/255, 1 }, over={ 0/255, 197/255, 205/255, 0.4 } },
+	--     -- strokeColor = { default={ 1, 0.4, 0, 1 }, over={ 0.8, 0.8, 1, 1 } },
+	--     labelColor = {default={ 1, 1, 1 }, over={ 0, 0, 0, 0.5 }}
+	-- }
+	-- sceneGroup:insert(restartButton)
+	-- -- Center the button
+	-- restartButton.x = display.contentCenterX - 150
+	-- restartButton.y = display.contentCenterY+300
+
+	-- -- Change the button's label text
+	-- restartButton:setLabel( "Restart" )
+	-- -- transition.to(restartButton,{time=200, x = display.contentCenterX - 150})
+	-- physics.addBody(restartButton,{filter={groupIndex=-1}})
+
+	local gameOverText = display.newText( "GAME OVER", display.contentCenterX, display.contentCenterY-450,native.systemFontBold, 100 )
+	gameOverText:setFillColor( 219/255, 112/255, 147/255 )
+	sceneGroup:insert(gameOverText)
+
+	scoreGroup = display.newGroup();
+	scoreGroup.x = display.contentCenterX
+	scoreGroup.y = display.contentCenterY-200
+
+	local scoreBG = display.newRoundedRect(0 ,0, 250, 250,12 )
+	-- myRoundedRect.strokeWidth = 3
+	scoreBG:setFillColor( 237/255,145/255,33/255 )
+
+	scoreGroup:insert(scoreBG)
+	-- myRoundedRect:setStrokeColor( 1, 0, 0 )
+
+	local currentScoreLabel = display.newText( "SCORE", 0, -95,native.systemFontBold, 30 )
+	currentScoreLabel:setFillColor( 1,1,1 )
+	scoreGroup:insert(currentScoreLabel)
+
+	
+
+	local currentScoreValue = display.newText( score, 0, -35,native.systemFontBold, 70 )
+	currentScoreValue:setFillColor( 1,1,1 )
+	scoreGroup:insert(currentScoreValue)
+
+	
+
+	local bestScoreLabel = display.newText( "BEST", 0, 25,native.systemFontBold, 30 )
+	bestScoreLabel:setFillColor( 1,1,1 )
+	scoreGroup:insert(bestScoreLabel)
+
+	
+	--read the value from persistence
+	local bestScoreValue = display.newText( score, 0, 85,native.systemFontBold, 70 )
+	bestScoreValue:setFillColor( 1,1,1 )
+	scoreGroup:insert(bestScoreValue)
+
+	sceneGroup:insert(scoreGroup)
+
+	restartButtonGrp = display.newGroup()
+	restartButton = display.newCircle(0,0,150)
+	restartButton:setFillColor(0/255, 197/255, 205/255, 1)
+	restartButtonGrp:insert(restartButton)
+
+	restartImage = display.newImageRect("restart.png",150,150)
+	restartButtonGrp:insert(restartImage)
+
+	restartButtonGrp.x = display.contentCenterX 
+	restartButtonGrp.y = display.contentCenterY +100
+
+	sceneGroup:insert(restartButtonGrp)
+	physics.addBody(restartButtonGrp,{filter={groupIndex=-1},bounce = 1})
+	restartButtonGrp.gravityScale = 5
+	restartButtonGrp:addEventListener("touch",onSceneTouch)
+
+	shareGroup = display.newGroup()
+	shareGroup.x = display.contentCenterX+ (display.contentCenterX*.7)
+	shareGroup.y = display.contentCenterY
+
+	local shareBG = display.newCircle(0,0,64)
+	shareBG:setFillColor(128/255,128/255,128/255,0.5)
+	shareGroup:insert(shareBG)
+	local shareImg = display.newImageRect("share.png",80,80)
+	shareGroup:insert(shareImg)
+	sceneGroup:insert(shareGroup)
+
+	homeGroup = display.newGroup()
+	homeGroup.x = display.contentCenterX *.3
+	homeGroup.y = display.contentCenterY
+
+	local homeBG = display.newCircle(0,0,64)
+	homeBG:setFillColor(128/255,128/255,128/255,0.5)
+	homeGroup:insert(homeBG)
+	local homeImg = display.newImageRect("home.png",80,80)
+	homeGroup:insert(homeImg)
+	sceneGroup:insert(homeGroup)
+
+
+end
+----------------------------------------------------------------------------------
+local function onFloorCollision( self, event )
+	-- body
+	if (event.other.myName == "floor" ) then
+		local  currentVx, currentVy = hero:getLinearVelocity()
+		self:setLinearVelocity(currentVx,-900)
+
+	elseif (event.other.myName == "star" ) then
+		wrath:setLinearVelocity(0,-200)
+	elseif (event.other.myName == "wrath" or event.other.name == "spike") then
+		timer.performWithDelay(0,killHero,1)
+		timer.performWithDelay(1000,gameOver,1)
+	end
+end
+
+----------------------------------------------------------------------------------
+
+
+
+local function addBottomSpikes( event )
+		
+		local image_name = "bottom_spike.png"
+
+		local image_outline = graphics.newOutline( 2, image_name )
+ 		
+	 	
+	 	
+		local vertices = { 0,-20, 20,20,20,80,-20,80, -20,20   }
+		local spikeX = math.random(50,display.contentWidth-50)
+		local spike = display.newImageRect( image_name,50,150 )
+		spike.x = spikeX
+		spike.y = display.contentHeight+50
+		-- spike:setFillColor( 219/255, 112/255, 147/255 )
+		spike.alpha = 1
+		spike.name = "spike"
+		physics.addBody( spike, "dynamic", { friction=0.5, bounce=0.3 ,isSensor = true,outline = image_outline} )
+		spike.up = true
+		spike.gravityScale=0
+		spike_group:insert(spike)
+
+	
+end
+
+----------------------------------------------------------------------------
+ local function addTopSpikes( event )
+ 		local image_name = "top_spike.png"
+
+		local image_outline = graphics.newOutline( 2, image_name )
+ 		local spikeVertices = {25,25,0,100,-25,25}
+	 	local xPosition = math.random(50,display.contentWidth-50)
+	 	spike = display.newImageRect( image_name,50,70 )
+	 	spike.x = xPosition
+	 	spike.y = -50
+		-- spike:setFillColor(219/255, 112/255, 147/255 )
+		spike.gravityScale = 0
+		spike.name = "spike"
+		physics.addBody( spike, "dynamic", {isSensor = true, density = 0,outline = image_outline } )
+		topSpikeGrp:insert(spike)
+		
+ 	-- 25,25,0,100,-25,25
+ -- 	local image_name = "spike1.png"
+
+	-- local image_outline = graphics.newOutline( 2, image_name )
+
+	-- wrath = display.newImageRect( image_name,display.contentWidth,80 )
+ 	
+ end
+ ---------------------------------------------------------------------------------
+local function changeColor( event )
+	
+end
+
+
+ -------------------------------------------------------------------------------
+local function addSpikes( event )
+	-- if(score >= 5) then
+	-- 	local numSpikes = 0
+	-- 	if(score < 10) then
+	-- 		numSpikes = 1
+	-- 	end
+	-- 	if(score >= 10 and score < 15) then
+	-- 		numSpikes = 2
+	-- 	end
+	-- 	for i=1,numSpikes do
+	-- 		addTopSpikes( event )	
+	-- 	end
+	-- end
+	-- if(score >= 15) then
+	-- 	local numSpikes = 0
+	-- 	if(score < 20) then
+	-- 		numSpikes = 1
+	-- 	end
+	-- 	if (score >= 20 and score < 25) then
+	-- 		numSpikes = 2
+	-- 	end
+	-- 	for i=1,numSpikes do
+	-- 		addBottomSpikes(event)
+	-- 	end
+		
+	-- end
+	local switch = math.random(1,3)
+
+	local spikeFactor = score/10
+	local maxSpikes = 1
+	local numSpikes = 1
+	if (spikeFactor >= 5) then
+		maxSpikes = 5
+	else
+		maxSpikes = math.floor(spikeFactor)
+	end
+	
+	
+	if (switch == 1 or switch == 3) then
+		--display top spikes
+		if(maxSpikes > 0) then
+			numSpikes = math.random(1,maxSpikes)
+		end
+		for i=1,numSpikes do
+			addTopSpikes( event )	
+		end
+	end
+	if(switch == 2 or switch == 3) then
+		--display bottom spikes
+		if(maxSpikes > 0) then
+			numSpikes = math.random(1,maxSpikes)
+		end
+		for i=1,numSpikes do
+			addBottomSpikes(event)
+		end
+	end
+end
+--------------------------------------------------------------------------------
+
+function addTrail( event )
+	if (not (hero == nil)) then
+		local trail = display.newCircle( hero.x,hero.y,  20 )
+		trail.count = 3
+		trail.alpha = 0.5
+		trail:setFillColor(0/255, 197/255, 205/255)
+		local trailRemove = function( obj )
+		    obj:removeSelf()
+		    obj = nil
+		end
+		transition.to( trail, { time=1000, xScale=0.001,yScale = 0.001,onComplete = trailRemove} )		
+	end
+end
+
+ function scene:touch( event )
+	
+		
+		if (event.phase == "began") then
+			-- trailTimer = timer.performWithDelay( 200, addTrail, 4 )
+			local  currentVx, currentVy = hero:getLinearVelocity()
+			if (hero.isRight) then
+	    		hero:setLinearVelocity( 350 , currentVy )			
+				hero.isRight = false		
+			else
+				hero:setLinearVelocity(-350,currentVy)
+				hero.isRight = true
+			end
+			
+		end
+	
+	
+
+	
+end
+
+----------------------------------------------------------------------------
+
+function scene:create( event )
+
+	local systemFonts = native.getFontNames()
+
+	-- Set the string to query for (part of the font name to locate)
+	local searchString = "pt"
+
+	-- Display each font in the Terminal/console
+	-- for i, fontName in ipairs( systemFonts ) do
+
+	   
+	--         print( "Font Name = " .. tostring( fontName ) )
+	    
+	-- end
+
+
+	sceneGroup = self.view
+	spike_group = display.newGroup()
+	sceneGroup:insert(spike_group)
+	center_piece = display.newRect( 0,0,display.contentWidth,40 )
+	center_piece.myName = "floor"
+	-- center_piece.alpha = .5
+	center_piece.x = display.contentCenterX
+	center_piece.y = ( display.contentHeight -20)
+	
+	sceneGroup:insert(center_piece)
+	-- center_piece.xScale = 3
+	physics.addBody( center_piece, "static", { friction=0.5, bounce=0.3 } )
+	center_piece:setFillColor( 128/255, 128/255, 128/255,128/256 )
+
+	local image_name = "spike1.png"
+
+	local image_outline = graphics.newOutline( 2, image_name )
+
+	wrath = display.newImageRect( image_name,display.contentWidth,60 )
+	wrath.myName = "wrath"
+	wrath.x = display.contentCenterX
+	wrath.y = 30
+	-- wrath:setFillColor( 219/255, 112/255, 147/255 )
+	sceneGroup:insert(wrath)
+	-- center_piece.xScale = 3
+	physics.addBody( wrath, "dynamic", {isSensor = true, friction=0.5, bounce=0.3, outline = image_outline,filter ={groupIndex = -1} } )
+	wrath.gravityScale = 0
+
+	scoreBg = display.newCircle(display.contentCenterX,display.contentHeight*.35,120)
+	scoreBg:setFillColor( 128/255, 128/255, 128/255,0.2)
+	sceneGroup:insert(scoreBg)
+	myText = display.newText( score, display.contentWidth/2, display.contentHeight*.35,native.systemFontBold, 100 )
+	myText:setFillColor( 1,1,1,0.7 )
+	
+	sceneGroup:insert(myText)
+	image_group = display.newGroup()
+	sceneGroup:insert(image_group)
+	
+
+	hero = display.newCircle( 0,0,  40 )
+	-- hero:setFillColor( 0.7 )
+	hero.x = 5
+	hero.y = ( display.contentHeight - 150 )
+	hero.myName = "hero"
+	-- center_piece.xScale = 3
+	physics.addBody( hero, "dynamic", { friction=0.5, bounce=0.3,radius = 40 } )
+	hero.gravityScale = 5
+	hero.isRight = false	
+	hero:setLinearVelocity(350,-900)
+	hero:setFillColor( 0/255, 197/255, 205/255 )
+	hero.collision = onFloorCollision
+	hero:addEventListener( "collision", hero )
+	sceneGroup:insert(hero)
+
+	
+	topSpikeGrp = display.newGroup()
+	sceneGroup:insert(topSpikeGrp)
+	
+	-- local xPosition = 15
+	-- for i=0,26 do
+	-- 	spike = display.newPolygon(xPosition,30,spikeVertices)
+	-- 	spike:setFillColor(219/255, 112/255, 147/255 )
+	-- 	spike.gravityScale = 0
+	-- 	physics.addBody( spike, "dynamic", {isSensor = true, density = 0 } )
+	-- 	local weldJoint = physics.newJoint( "weld", wrath, spike,xPosition, 0 )
+	-- 	weldJoint.dampingRatio = 1
+	-- 	spike.joint = weldJoint
+	-- 	SpikeGrp:insert(spike)
+	-- 	xPosition = xPosition + 30
+	-- end
+	-- sceneGroup:insert(SpikeGrp)
+
+	
+end
+
+function scene:show( event )
+	
+	local phase = event.phase
+	
+	if "will" == phase then	
+	
+		-- remove previous scene's view
+		composer.removeScene( "scene1" )
+		
+		
+		
+	elseif( "did" == phase ) then
+
+		Runtime:addEventListener("enterFrame", scene)
+		starTimer = timer.performWithDelay( 1000, create_body, -1 )
+		spikesTimer = timer.performWithDelay( 3000, addSpikes, -1 )
+		-- topSpikesTimer = timer.performWithDelay( 3000, addTopSpikes, -1 )
+		touchListener = Runtime:addEventListener("touch", scene)
+		trailTimer = timer.performWithDelay(200,addTrail,-1)
+		colorTimer = timer.performWithDelay(1000,changeColor,-1)
+		wrath.gravityScale = 0.5
+		wrath:setLinearVelocity(0,-10)
+
+	end
+	
+end
+
+function scene:hide( event )
+	print("hide screen2 "..event.phase)
+	local phase = event.phase
+	if "will" == phase then
+	
+		
+	end
+end
+
+function scene:destroy( event )
+	print("destrot screen2")
+	for i=1,heroPieces.numChildren do
+		if(not(heroPieces[i] == nil)) then
+			heroPieces[i]:removeSelf()
+			heroPieces[i] = nil
+		end
+	end
+	heroPieces = nil
+	Runtime:removeEventListener('enterFrame',scene)
+		
+end
+
+---------------------------------------------------------------------------------
+
+-- Listener setup
+scene:addEventListener( "create", scene )
+scene:addEventListener( "show", scene )
+scene:addEventListener( "hide", scene )
+scene:addEventListener( "destroy", scene )
+
+---------------------------------------------------------------------------------
+
+return scene

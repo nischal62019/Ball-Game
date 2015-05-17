@@ -18,7 +18,7 @@ local gameTitle, gameFloor
 local playButtonGrp, sceneGroup
 local soundOn, soundOff
 local noAdsButton, leaderboardButton, soundButton,playButton
-local font =  "Alfabetix" 
+local font =  native.systemFontBold
 
 -- Touch event listener for background image
 local function onPlayTouch( event )

@@ -15,8 +15,8 @@ physics.start()
 local squarePoint, gameFloor, wrath, hero
 local touchListener  
 local trails
-local heroPiecesGrp, sceneGroup, squarePointGrp, topSpikeGrp, spike_group, shareGroup, homeGroup, restartGroup
-local scoreText
+local heroPiecesGrp, sceneGroup, squarePointGrp, topSpikeGrp, spike_group, shareGroup, homeGroup, restartGroup, scoreGroup
+local scoreText, scoreBg
 local starTimer, spikesTimer, trailTimer, colorTimer
 local score =0
 local colorCount = 0
@@ -123,8 +123,9 @@ function scene:enterFrame( event )
 	   	end
 	end
 	-- keep hero pieces in world
-	if(not(heroPiecesGrp == nil)) then
+	-- if(not(heroPiecesGrp == nil)) then
 		for i=1,heroPiecesGrp.numChildren do
+			
 			local  currentVx, currentVy = heroPiecesGrp[i]:getLinearVelocity()
 			if (heroPiecesGrp[i].x >= display.contentWidth) then
 			  heroPiecesGrp[i]:setLinearVelocity(-350,currentVy)
@@ -134,7 +135,17 @@ function scene:enterFrame( event )
 		    	heroPiecesGrp[i]:setLinearVelocity(currentVx,-currentVy)	
 		   	end
 		end
-	end
+	-- end
+	-- kill top spike after exiting the world
+	-- if( not ( topSpikeGrp == nil ) ) then
+	-- 	for i=1,topSpikeGrp.numChildren do
+	-- 		if ( topSpikeGrp[i].y > display.contentHeight + 50 ) then
+	-- 	    	topSpikeGrp[i]:removeSelf( )
+	-- 	    	topSpikeGrp[i] = nil
+		    	
+	-- 	   	end
+	-- 	end
+	-- end
 	-- keep wrath in world
 	if (wrath.y >= display.contentHeight-20) then
 	   		wrath.y = display.contentHeight-20
@@ -162,22 +173,31 @@ function scene:enterFrame( event )
 		   		end
 		   	end   		
 		end
-	end		
+	end	
+	if ( not( scoreGroup == nil )) then
+		if( not( scoreGroup[1] == nil ) ) then
+			scoreGroup[1].rotation = scoreGroup[1].rotation + 2
+		end	
+	end
+	
 end
 ---------------------------------------------------------------------
 -- Handles transition from screen 2 to screen 1
 function goToHomeScreen( self, event )
+		
 		composer.gotoScene( "scene1", "fade", 400  )
 		return true
 end
 ------------------------------------------------------------------------------
 -- Kill hero create hero pieces and handle hero pieces transition
 local function killHero( event )
-	heroPiecesGrp = display.newGroup()
+	
 	-- remove touch listener
 	Runtime:removeEventListener('touch',scene)
 	if(not (hero == nil)) then
 		local x,y = hero.x,hero.y
+		hero:removeSelf()
+		hero = nil
 		for i=1,10 do
 			local circle = display.newCircle(x,y,math.random(10,20))
 			local xVelocity = math.random(-10000,10000)
@@ -185,11 +205,10 @@ local function killHero( event )
 			physics.addBody(circle,"dynamic",{bounce = 1,filter ={groupIndex = -1}})
 			circle:setLinearVelocity(xVelocity,yVelocity)
 			circle:setFillColor( 0/255, 197/255, 205/255 )
-			transition.to( circle, { time=2000, xScale=0.001,yScale = 0.001,onComplete = removeObjectAfterTransition} )	
+			transition.to( circle, { time=2000, xScale=0.001,yScale = 0.001} )	
 			heroPiecesGrp:insert(circle)
 		end
-		hero:removeSelf()
-		hero = nil
+		
 		sceneGroup:insert(heroPiecesGrp)
 	end
 end
@@ -212,13 +231,14 @@ local function gameOver( event )
 	sceneGroup:insert(gameOverText)
 
 	-- Add score group
-	local scoreGroup = display.newGroup();
+	
 	scoreGroup.x = display.contentCenterX
 	scoreGroup.y = display.contentCenterY-220
 
-	local scoreBG = display.newRoundedRect(0 ,0, 250, 250,12 )
-	scoreBG:setFillColor( 237/255,145/255,33/255 )
-	scoreGroup:insert(scoreBG)
+	local scoreBGImg = display.newRoundedRect(0 ,0, 250, 250,12 )
+	scoreBGImg:setFillColor( 237/255,145/255,33/255 )
+	physics.addBody( scoreBGImg, "kinematic", {} )
+	scoreGroup:insert(scoreBGImg)
 
 	local currentScoreLabel = display.newText( "SCORE", 0, -95,native.systemFontBold, 30 )
 	currentScoreLabel:setFillColor( 1,1,1 )
@@ -296,8 +316,10 @@ local function heroCollisionHandler( self, event )
 		wrath:setLinearVelocity(0,-200)
 	elseif (event.other.myName == "wrath" or event.other.name == "spike") then
 		-- on collision with wrath or spike kill hero
+		hero:removeEventListener( "collision", hero )
 		timer.performWithDelay(0,killHero,1)
 		timer.performWithDelay(1000,gameOver,1)
+	
 	end
 end
 
@@ -334,6 +356,7 @@ end
 		spike.name = "spike"
 		physics.addBody( spike, "dynamic", {isSensor = true, density = 0,outline = image_outline } )
 		topSpikeGrp:insert(spike)
+		sceneGroup:insert( topSpikeGrp )
  	
  end
 ---------------------------------------------------------------------------------
@@ -473,6 +496,11 @@ function scene:create( event )
 	topSpikeGrp = display.newGroup()
 	sceneGroup:insert(topSpikeGrp)
 
+	scoreGroup = display.newGroup( )
+	
+
+	heroPiecesGrp = display.newGroup()
+
 end
 --------------------------------------------------------------------
 -- life cycle method show
@@ -512,14 +540,7 @@ end
 -- Life cycle method destroy
 
 function scene:destroy( event )
-	
-	for i=1,heroPiecesGrp.numChildren do
-		if(not(heroPiecesGrp[i] == nil)) then
-			heroPiecesGrp[i]:removeSelf()
-			heroPiecesGrp[i] = nil
-		end
-	end
-	heroPiecesGrp = nil
+
 	Runtime:removeEventListener('enterFrame',scene)
 		
 end
